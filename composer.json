@@ -1,5 +1,9 @@
 {
   "require-dev": {
     "phpunit/phpunit": "4.2.*"
+  },
+
+  "require": {
+    "sunra/php-simple-html-dom-parser": "dev-master"
   }
 }

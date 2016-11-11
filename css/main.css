@@ -1,0 +1,37 @@
+
+
+/* ==========================================================================
+   Author's custom styles
+   ========================================================================== */
+
+
+footer {
+	padding-top: 40px;
+	padding-bottom: 40px;
+	margin-top: 100px;
+	color: #777;
+	text-align: center;
+	border-top: 1px solid #e5e5e5;
+}
+
+.bs-docs-header {
+	margin-bottom: 40px;
+	font-size: 20px;
+	position: relative;
+	padding: 30px 15px;
+}
+
+@media (min-width: 768px)
+.bs-docs-header {
+	padding-top: 60px;
+	padding-bottom: 60px;
+	font-size: 24px;
+	text-align: left;
+}
+
+.bs-docs-header h1 {
+font-size: 50px;
+line-height: 1;
+margin: 0 auto 60px 0;
+text-align: center;
+}
