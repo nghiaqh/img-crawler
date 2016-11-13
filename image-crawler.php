@@ -1,7 +1,6 @@
-ls
 <?php
 set_time_limit(0);
-require("include/url_to_absolute.php");
+require("./include/url_to_absolute.php");
 
 class ImageCrawler {
 
@@ -28,16 +27,11 @@ class ImageCrawler {
 			CURLOPT_COOKIE => $cookie,
 			CURLOPT_HTTPGET => true,
 			CURLOPT_HEADER => 0
-		  );
-
-		// if (stripos($url, 'exhentai.org')) {
-		//     array_push($header, 'DNT:1', 'Host:exhentai.org', 'Referer:http://exhentai.org/');
-		//     $curlOptions[CURLOPT_HTTPHEADER] = $header;
-		// }
+			);
 
 		$dom = new DOMDocument;
 
-		$html = $this->getURLContent($curlOptions); file_put_contents('download/dump.txt', $html);
+		$html = $this->getURLContent($curlOptions);
 		libxml_use_internal_errors(true); //ignore HTML5 tags error
 		$dom->loadHTML($html);
 		libxml_use_internal_errors(false);
@@ -68,6 +62,8 @@ class ImageCrawler {
 				}
 			}
 		}
+
+		// echo '<h2>'.$url.'</h2>';
 		return array($nodes, $links, $title); //$node: html texts, $links: urls only
 	}
 
@@ -78,11 +74,11 @@ class ImageCrawler {
 		'Mozilla/5.0 (Windows NT 6.3; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/35.0.1916.153 Safari/537.36';
 
 		$curlOptions = array(
-		  CURLOPT_URL => $url,
-		  CURLOPT_RETURNTRANSFER => 1,
-		  CURLOPT_USERAGENT => $user_agent,
-		  CURLOPT_COOKIE => $cookie
-		  );
+			CURLOPT_URL => $url,
+			CURLOPT_RETURNTRANSFER => 1,
+			CURLOPT_USERAGENT => $user_agent,
+			CURLOPT_COOKIE => $cookie
+			);
 		$dom = new DOMDocument;
 
 		$html = $this->getURLContent($curlOptions);
@@ -98,8 +94,10 @@ class ImageCrawler {
 				if (!in_array($link, $links)) {
 					$links[] = $link;
 				}
+
 				return $links;
 			}
+
 			if ($html) {
 				libxml_use_internal_errors(true);
 				$dom->loadHTML($html->C14N());
@@ -108,7 +106,6 @@ class ImageCrawler {
 		}
 
 		foreach ($dom->getElementsByTagName('img') as $node) {
-
 			if ($node->hasAttribute("src")) {
 				$link = url_to_absolute($url, $node->getAttribute("src"));
 				if (!in_array($link, $links)) {
@@ -118,16 +115,17 @@ class ImageCrawler {
 				}
 			}
 		}
-		return array($nodes, $links);
+
+		return $links;
 	}
 
-	public function downloadImage($url, $name_prefix = null, $cookie = null) {
+	public function downloadImage($url, $name_prefix = null, $cookie = null, $progress = null) {
 		$pattern = '#[^\/]+\.(jpg|png)#i';
 		$header = array(
-		  'Accept: image/webp,*/*;q=0.8',
-		  'Accept-Encoding: gzip,deflate,sdch',
-		  'Accept-Language: en-US,en;q=0.8,en-AU;q=0.6',
-		  );
+			'Accept: image/webp,*/*;q=0.8',
+			'Accept-Encoding: gzip,deflate,sdch',
+			'Accept-Language: en-US,en;q=0.8,en-AU;q=0.6',
+			);
 		$user_agent =
 		'Mozilla/5.0 (Windows NT 6.3; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/35.0.1916.153 Safari/537.36';
 		if (preg_match($pattern, $url, $matches)) {
@@ -139,18 +137,25 @@ class ImageCrawler {
 				mkdir($foldername, 0777, true);
 				umask($oldmask);
 			}
+
 			$filename = $this->cleanName(substr($name_prefix, 0, 10) . "_" . $matches[0]);
 			$fp = fopen($foldername."/".$filename, "w");
 
 			$curlOptions = array(
-			  CURLOPT_URL => $url,
-			  CURLOPT_FILE => $fp,
-			  CURLOPT_HEADER => false,
-			  CURLOPT_HTTPGET => true,
-			  CURLOPT_USERAGENT => $user_agent,
-			  CURLOPT_HTTPHEADER => $header,
-			  CURLOPT_COOKIE => $cookie
-			  );
+				CURLOPT_URL => $url,
+				CURLOPT_FILE => $fp,
+				CURLOPT_HEADER => false,
+				CURLOPT_HTTPGET => true,
+				CURLOPT_USERAGENT => $user_agent,
+				CURLOPT_HTTPHEADER => $header,
+				CURLOPT_COOKIE => $cookie
+				);
+
+			if ($progress) {
+				$curlOptions[CURLOPT_NOPROGRESS] = false;
+				$curlOptions[CURLOPT_PROGRESSFUNCTION] = $progress;
+			}
+
 			$ch = curl_init();
 			curl_setopt_array($ch, $curlOptions);
 			curl_exec($ch);
@@ -168,7 +173,7 @@ class ImageCrawler {
 		curl_setopt_array($ch, $setopt_content);
 		$result_data = curl_exec($ch);
 		$info = curl_getinfo($ch);
-		var_dump($info);
+		// echo '<h1> CRUL_GETINFO: </h1>'; var_dump($info);
 		curl_close($ch);
 		return $result_data;
 	}
@@ -178,6 +183,7 @@ class ImageCrawler {
 		if (preg_match($pattern, $url, $matches)) {
 			return $matches;
 		}
+
 		return null;
 	}
 
@@ -185,6 +191,7 @@ class ImageCrawler {
 		if (strstr($url, "newreply.php")) {
 			return false;
 		}
+
 		return true;
 	}
 
@@ -223,24 +230,24 @@ class ImageCrawler {
 		// Assume failure.
 		$result = -1;
 		$header = array(
-		  'Accept: image/webp,*/*;q=0.8',
-		  'Accept-Encoding: gzip,deflate,sdch',
-		  'Accept-Language: en-US,en;q=0.8,en-AU;q=0.6',
-		  );
+			'Accept: image/webp,*/*;q=0.8',
+			'Accept-Encoding: gzip,deflate,sdch',
+			'Accept-Language: en-US,en;q=0.8,en-AU;q=0.6',
+			);
 		$user_agent =
 		'Mozilla/5.0 (Windows NT 6.3; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/35.0.1916.153 Safari/537.36';
 
 		$curlOptions = array(
-		  CURLOPT_URL => $url,
-		  CURLOPT_HEADER => true,
-		  CURLOPT_HTTPGET => true,
-		  CURLOPT_USERAGENT => $user_agent,
-		  CURLOPT_HTTPHEADER => $header,
-		  CURLOPT_NOBODY => true,
-		  CURLOPT_RETURNTRANSFER => true,
-		  CURLOPT_FOLLOWLOCATION => true,
-		  CURLOPT_COOKIE => $cookie
-		  );
+			CURLOPT_URL => $url,
+			CURLOPT_HEADER => true,
+			CURLOPT_HTTPGET => true,
+			CURLOPT_USERAGENT => $user_agent,
+			CURLOPT_HTTPHEADER => $header,
+			CURLOPT_NOBODY => true,
+			CURLOPT_RETURNTRANSFER => true,
+			CURLOPT_FOLLOWLOCATION => true,
+			CURLOPT_COOKIE => $cookie
+			);
 		$ch = curl_init();
 		curl_setopt_array($ch, $curlOptions);
 		$data = curl_exec($ch);
@@ -271,33 +278,41 @@ class ImageCrawler {
 /*
 Example of how to use ImageCrawler
 */
-function downloadImages($pages, $thumbnailContainerId = null, $imageContainerId = null, $cookie = null, $sizelimit = 30720) {
+function downloadImages($pages, $thumbnailContainerId = null, $imageContainerId = null, $cookie = null, $sizelimit = 30720, $preprocess = null) {
 	if (empty($pages)) {
 		return 0;
 	}
+
 	$crawler = new ImageCrawler;
 	foreach ($pages as $page) {
 		$array = $crawler->scanForImageLinks($page, $thumbnailContainerId, $cookie);
-		$urls = $array[1];var_dump($array);
-		$title = substr($array[2], 0, 80); //cut part of title longer than 80 characters
-		foreach ($urls as $u) {
-			foreach ($crawler->scanForImages($u, $imageContainerId, $cookie)[1] as $image) {
+		$urls = $array[1];
+		$title = substr($array[2], 0, 300); //cut part of title longer than 300 characters
+		foreach ($urls as $i=>$u) {
+			foreach ($crawler->scanForImages($u, $imageContainerId, $cookie) as $image) {
+				if ($preprocess) {
+					$image = call_user_func($preprocess, $image);
+				}
+
+				// echo '<p>'.$image.'</p>';
 				if ($crawler->curlGetFileSize($image) > $sizelimit) {// download images have size > 30KB
 					$crawler->downloadImage($image, $title);
 				}
 			}
 		}
 	}
+
 	return 1;
 }
 
-
-function httpPost($url,$params) {
+// Send POST request
+function httpPost($url, $params) {
 	$postData = '';
 	//create name value pairs seperated by &
 	foreach($params as $k => $v) {
-	  $postData .= $k . '='.$v.'&';
+		$postData .= $k . '='.$v.'&';
 	}
+
 	rtrim($postData, '&');
 
 	$user_agent =
@@ -318,77 +333,31 @@ function httpPost($url,$params) {
 	return $output;
 }
 
-function bulk_rename($folderPath) {
-	//count total files in folder:
-	$fi = new FilesystemIterator($folderPath, FilesystemIterator::SKIP_DOTS);
-	printf("There were %d Files", iterator_count($fi));
-	$digitCount = strlen((string) iterator_count($fi));
-	//loop through files in folder
-	if ($handler = opendir($folderPath)) {
-		while ($file = readdir($handler)) {
-			//find the integer in file names
-			preg_match_all('!\d+!', $file, $matches);
-			var_dump($matches);
-			// add '0' into file name
-			foreach ($matches as $match) {
-				$number = array_pop($match);
-				$i = $digitCount - strlen((string) $number);
-				$new_number = $number;
-				if ( $i ) {
-					while ($i--)
-						$new_number = '0' . $new_number;
-				}
-
-				// replace old integer in file name with new string
-				$new_filename = str_replace($number, $new_number, $file);
-				rename($folderPath.'/'.$file, $folderPath.'/'.$new_filename);
-			}
-		}
-	}
+// Get url of full size image of hentairules.net
+function getOriginSizeImageUrl($url) {
+	$url = str_replace('/_data/i/', '/', $url);
+	$url = str_replace('-xx.', '.', $url);
+	return $url;
 }
 
-// nhentai.net
-// $pages = [
-// 'http://nhentai.net/g/144047/'
-
-// ];
-// $cookie = "";
-// downloadImages($pages, "thumbnail-container", "image-container", $cookie);
-
-
-// Hentairules.net
-// $pages = [
-// ];
-// $cookie = "picture_deriv=xxlarge";
-// downloadImages($pages, "thumbnails", "theImage", $cookie);
-
-
-// G.E-hentai.org
-// Get cookie for CURL
+// Get cookie for g.e-hentai.org
 function getCookie() {
-  $params = array(
+	$params = array(
 	"UserName" => "meaning",
 	"PassWord" => "iamtheone",
 	"bt" => '',
 	"b" => "d",
 	"CookieDate" => 1,
 	"ipb_login_submit" => "Login!"
-  );
+	);
 
-  $result = httpPost("https://forums.e-hentai.org/index.php?act=Login&CODE=01",$params);
-  // get cookie from e-hentai.org
-  preg_match_all('/^Set-Cookie:\s*([^;]*)/mi', $result, $m);
-  $cookie = '';
-  foreach($m[1] as $value) {
-	  $cookie .= $value . ';';
-  }
-  return $cookie;
+	$result = httpPost("https://forums.e-hentai.org/index.php?act=Login&CODE=01",$params);
+	// get cookie from e-hentai.org
+	preg_match_all('/^Set-Cookie:\s*([^;]*)/mi', $result, $m);
+	$cookie = '';
+	foreach($m[1] as $value) {
+		$cookie .= $value . ';';
+	}
+
+	return $cookie;
 }
-
-$cookie = '';
-$cookie = getCookie();
-
-$pages = [
-
-];
-downloadImages($pages, "gdt", null, $cookie);
