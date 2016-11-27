@@ -1,0 +1,3 @@
+[submodule "include/php-websockets"]
+	path = include/php-websockets
+	url = https://github.com/ghedipunk/PHP-WebSockets
