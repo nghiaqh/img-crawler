@@ -20,6 +20,12 @@ class CrawlerServer extends WebsocketServer {
 		parent::__construct($addr, $port, $bufferLength);
 	}
 
+	/**
+	 * Main logic: parsing input pages array from message and crawl images
+	 * @param  [type] $user    [description]
+	 * @param  [String] $message [description]
+	 * @return [type]          [description]
+	 */
 	protected function process ($user, $message) {
 		if ($message) {
 			$pages = explode(',', $message);
@@ -33,6 +39,9 @@ class CrawlerServer extends WebsocketServer {
 			}
 
 			foreach ($pages as $pid=>$page) {
+				$page = trim($page);
+
+				// Generate parameters for crawler
 				if (strpos($page, 'hentairules.net') !== false) {
 					$thumbnailContainerId = 'thumbnails';
 					$imageContainerId = 'theImage';
@@ -45,12 +54,13 @@ class CrawlerServer extends WebsocketServer {
 					$imageContainerId = 'image-container';
 				}
 
-				$this->stdout('Crawling ' . $page);
+				$this->stdout('Crawling ' . $page); // Terminal log
 
 				$array = $this->crawler->scanForImageLinks($page, $thumbnailContainerId, $this->cookie);
 				$urls = $array[1];
-				$title = substr($array[2], 0, 300); //cut part of title longer than 300 characters
+				$title = substr($array[2], 0, 164); //cut part of title longer than 300 characters
 
+				// Send to client currently-being-processed page info.
 				$reply = json_encode(array(
 					'type' => 'page',
 					'id' => $pid,
@@ -61,25 +71,28 @@ class CrawlerServer extends WebsocketServer {
 				));
 				$this->send($user, $reply);
 
+				// Scan image pages for actual image
 				foreach ($urls as $i=>$u) {
-					foreach ($this->crawler->scanForImages($u, $imageContainerId, $this->cookie) as $image) {
-						if ($this->preprocess) {
-							$image = call_user_func($this->preprocess, $image);
-						}
+					// while ($i >= 0) {
+						foreach ($this->crawler->scanForImages($u, $imageContainerId, $this->cookie) as $image) {
+							if ($this->preprocess) {
+								$image = call_user_func($this->preprocess, $image);
+							}
 
-						if ($this->crawler->curlGetFileSize($image) > $this->sizelimit) {
-							$reply = json_encode(array(
-								'type' => 'image',
-								'id' => $i,
-								'url' => $image,
-								'progress' => 0
-							));
-							$this->send($user, $reply);
+							if ($this->crawler->curlGetFileSize($image) > $this->sizelimit) {
+								$reply = json_encode(array(
+									'type' => 'image',
+									'id' => $i,
+									'url' => $image,
+									'progress' => 0
+								));
+								$this->send($user, $reply);
 
-							// download images have size > 30KB
-							$this->crawler->downloadImage($image, $title, $this->cookie, array($this, 'progress'));
+								// download images have size > 30KB
+								$this->crawler->downloadImage($image, $title, $this->cookie, array($this, 'progress'));
+							}
 						}
-					}
+					// }
 				}
 			}
 		}

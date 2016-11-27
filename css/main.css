@@ -30,6 +30,14 @@ footer {
 	}
 }
 
+#socket-msg {
+	max-height: 70px;
+}
+
+#reconnect-socket {
+	margin: 10px;
+}
+
 /* Container*/
 .app-container {
 	margin: 20px auto;

@@ -3,11 +3,15 @@ var pages = [
 
 var socket;
 var currentPage;
+var parsedPages = {
+	'pages': []
+};
 var currentImgIndex;
 
-function init() {
-	var host = 'ws://127.0.0.1:9001/';
-
+/**
+ * Init Web Socket connection
+ */
+function init(host) {
 	try {
 		socket = new WebSocket(host);
 
@@ -27,6 +31,11 @@ function init() {
 	}
 }
 
+/**
+ * Send message to socket server
+ * @param  {String} msg [description]
+ * @return
+ */
 function send(msg) {
 	if(!msg) {
 		alert('Message can not be empty');
@@ -41,6 +50,10 @@ function send(msg) {
 	}
 }
 
+/**
+ * Disconnect to socket server
+ * @return {[type]} [description]
+ */
 function quit() {
 	if (socket != null) {
 		log('Goodbye!');
@@ -49,16 +62,28 @@ function quit() {
 	}
 }
 
-function reconnect() {
+/**
+ * Reconnect to socket server
+ */
+function reconnect(host) {
 	quit();
-	init();
+	init(host);
 }
 
-// Utilities
+/**
+ * Receive data from socket server and print to client
+ * @param  {String} msg [description]
+ * @return
+ */
 function log(msg) {
 	$('#socket-msg').append(msg + '<br>');
 }
 
+/**
+ * Render progress and status
+ * @param  {String} msg [description]
+ * @return {[type]}     [description]
+ */
 function render(msg) {
 	var data = JSON.parse(msg);
 
@@ -71,6 +96,7 @@ function render(msg) {
 	Mustache.parse(tplTwo);
 
 	if (typeof data.type !== 'undefined') {
+		// Render a page object parsing process in progress
 		if (data.type === 'page') {
 			currentPage = data;
 
@@ -89,6 +115,7 @@ function render(msg) {
 			$('#running').html(rendered);
 		}
 
+		// Render an image progress
 		if (data.type === 'image') {
 			currentPage.progress = (parseInt(data.id) + 1) * 100 / currentPage.images.length;
 			currentPage.images[data.id].status = data.status;
@@ -98,13 +125,20 @@ function render(msg) {
 			$('#running').html(rendered);
 		}
 
+		// Update image progress bar and progress, completed sections once a page completes
 		if (data.type === 'image progress') {
 			currentPage.images[currentImgIndex].progress = data.progress;
-			var rendered = Mustache.render(tplOne, currentPage);
-			$('#running').html(rendered);
+			var selector = '#img-' + currentImgIndex + ' .progress-bar';
+			$(selector).attr('aria-valuenow', data.progress);
+			$(selector).css('width', data.progress);
 
 			if ((currentImgIndex + 1 === currentPage.images.length) && data.progress === 100) {
-				rendered = Mustache.render(tplTwo, currentPage);
+				currentPage['time'] = Date();
+				if (parsedPages.pages.indexOf(currentPage) === -1) {
+					parsedPages.pages.push(currentPage);
+				}
+
+				rendered = Mustache.render(tplTwo, parsedPages);
 				$('#completed').html(rendered);
 				$('#running').html('');
 			}
@@ -116,13 +150,24 @@ function render(msg) {
 	}
 }
 
+/**
+ * Start binding events and init socket connection
+ */
 $(document).ready(function() {
-	init();
+	if (pages.length > 0) {
+		$('#form textarea').text(pages.toString().replace(/,/g, ',\n'));
+	}
 
-	$('#form textarea').text(pages.toString().replace(/,/g, ',\n'));
+	var host = 'ws://127.0.0.1:9001/';
+	init(host);
 
 	$('#form').on('submit', function(event) {
 		event.preventDefault();
 		send($('#form textarea')[0].value);
+	});
+
+	$('#reconnect-socket').click(function(event) {
+		event.preventDefault();
+		reconnect(host);
 	});
 });

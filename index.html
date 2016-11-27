@@ -45,6 +45,7 @@
     <div class="container bg-warning app-container">
       <h3>Socket notification</h3>
       <div id="socket-msg" class="info-block"></div>
+      <button type="button" id="reconnect-socket" class="btn btn-warning btn-sm">Reconnect socket</button>
     </div>
 
     <div class="container bg-info app-container">
@@ -76,7 +77,7 @@
       {{#images}}
         <a id="img-{{id}}" class="img-item img-thumbnail" href="{{url}}" target="_blank">
           <div class="progress">
-            <div class="progress-bar-success" role="progressbar" aria-valuenow="{{progress}}" aria-valuemin="0" aria-valuemax="100" style="width: {{progress}}%;">
+            <div class="progress-bar progress-bar-success" role="progressbar" aria-valuenow="{{progress}}" aria-valuemin="0" aria-valuemax="100" style="width: {{progress}}%;">
               {{id}}
             </div>
           </div>
@@ -87,9 +88,11 @@
     </script>
 
     <script id="template-complete" type="x-tmpl-mustache">
-      <p id="page-{{id}}-complete" class="page-item">
-        <a href="{{url}}" target="_blank">{{title}}</a>
-      </p>
+      {{#pages}}
+        <p id="page-{{id}}-complete" class="page-item">
+          <a href="{{url}}" target="_blank">{{title}}</a> - <span class="timestamp">{{time}}</span>
+        </p>
+      {{/pages}}
     </script>
 
     <script src="js/vendor/jquery-1.10.1.min.js"></script>
