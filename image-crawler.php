@@ -129,9 +129,9 @@ class ImageCrawler {
 		$user_agent =
 		'Mozilla/5.0 (Windows NT 6.3; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/35.0.1916.153 Safari/537.36';
 		if (preg_match($pattern, $url, $matches)) {
-			$foldername = "/media/nathan/D/".preg_replace('#(:;\.<>\|\?\\\/\[)#i', '', $name_prefix);
+			$foldername = "/media/nathan/D/".preg_replace('#[:;\.<>\|\?\\\[]#i', '', $name_prefix);
 			$foldername = preg_replace('#\]#', ',', $foldername);
-			$foldername = preg_replace('#\[#', '', $foldername);
+			$foldername = preg_replace('#\/#', '', $foldername);
 			if (!file_exists($foldername)) {
 				$oldmask = umask(0);
 				mkdir($foldername, 0777, true);
@@ -289,20 +289,28 @@ function downloadImages($pages, $thumbnailContainerId = null, $imageContainerId 
 		$urls = $array[1];
 		$title = substr($array[2], 0, 300); //cut part of title longer than 300 characters
 		foreach ($urls as $i=>$u) {
-			foreach ($crawler->scanForImages($u, $imageContainerId, $cookie) as $image) {
-				if ($preprocess) {
-					$image = call_user_func($preprocess, $image);
-				}
-
-				// echo '<p>'.$image.'</p>';
-				if ($crawler->curlGetFileSize($image) > $sizelimit) {// download images have size > 30KB
-					$crawler->downloadImage($image, $title);
+			if (substr($u, -4) === '.jpg' || substr($u, -4) === '.png') {
+				downloadImage($preprocess, $u, $crawler, $sizelimit, $title);
+			} else {
+				foreach ($crawler->scanForImages($u, $imageContainerId, $cookie) as $image) {
+					downloadImage($preprocess, $image, $crawler, $sizelimit, $title);
 				}
 			}
 		}
 	}
 
 	return 1;
+}
+
+function downloadImage($preprocess, $image, $crawler, $sizelimit, $title) {
+	if ($preprocess) {
+		$image = call_user_func($preprocess, $image);
+	}
+
+	// download images have size > size limit
+	if ($crawler->curlGetFileSize($image) > $sizelimit) {
+		$crawler->downloadImage($image, $title);
+	}
 }
 
 // Send POST request
@@ -358,6 +366,6 @@ function getCookie() {
 	foreach($m[1] as $value) {
 		$cookie .= $value . ';';
 	}
-
+	echo $cookie . "\r\n";
 	return $cookie;
 }

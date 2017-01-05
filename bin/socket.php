@@ -4,10 +4,7 @@ require_once(__DIR__.'/../include/php-websockets/websockets.php');
 require_once(__DIR__.'/../image-crawler.php');
 
 class CrawlerServer extends WebsocketServer {
-	private $cookie;
 	private $crawler;
-	private $sizelimit;
-	private $preprocess;
 
 	public function __construct($addr, $port, $bufferLength = 2048) {
 		// generate cookie for some site
@@ -40,6 +37,9 @@ class CrawlerServer extends WebsocketServer {
 
 			foreach ($pages as $pid=>$page) {
 				$page = trim($page);
+				$thumbnailContainerId = null;
+				$imageContainerId = null;
+				$this->preprocess = null;
 
 				// Generate parameters for crawler
 				if (strpos($page, 'hentairules.net') !== false) {
@@ -73,32 +73,37 @@ class CrawlerServer extends WebsocketServer {
 
 				// Scan image pages for actual image
 				foreach ($urls as $i=>$u) {
-					// while ($i >= 0) {
+					if (substr($u, -4) === '.jpg' || substr($u, -4) === '.png') {
+						$this->downloadImage($u, $title, $i, $user);
+					} else {
 						foreach ($this->crawler->scanForImages($u, $imageContainerId, $this->cookie) as $image) {
-							if ($this->preprocess) {
-								$image = call_user_func($this->preprocess, $image);
-							}
-
-							if ($this->crawler->curlGetFileSize($image) > $this->sizelimit) {
-								$reply = json_encode(array(
-									'type' => 'image',
-									'id' => $i,
-									'url' => $image,
-									'progress' => 0
-								));
-								$this->send($user, $reply);
-
-								// download images have size > 30KB
-								$this->crawler->downloadImage($image, $title, $this->cookie, array($this, 'progress'));
-							}
+							$this->downloadImage($image, $title, $i, $user);
 						}
-					// }
+					}
 				}
 			}
 		}
 
 		$this->send($user, 'Completed crawling!');
 		$this->stdout('Completed crawling!');
+	}
+
+	protected function downloadImage($image, $title, $i, $user) {
+		if ($this->preprocess) {
+			$image = call_user_func($this->preprocess, $image);
+		}
+
+		// download images have size > size limit
+		if ($this->crawler->curlGetFileSize($image, $this->cookie) > $this->sizelimit) {
+			$reply = json_encode(array(
+				'type' => 'image',
+				'id' => $i,
+				'url' => $image,
+				'progress' => 0
+			));
+			$this->send($user, $reply);
+			$this->crawler->downloadImage($image, $title, $this->cookie, array($this, 'progress'));
+		}
 	}
 
 	protected function connected ($user) {
