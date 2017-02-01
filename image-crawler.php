@@ -131,7 +131,9 @@ class ImageCrawler {
 		if (preg_match($pattern, $url, $matches)) {
 			$foldername = "/media/nathan/D/".preg_replace('#[:;\.<>\|\?\\\[]#i', '', $name_prefix);
 			$foldername = preg_replace('#\]#', ',', $foldername);
-			$foldername = preg_replace('#\/#', '', $foldername);
+			$foldername = preg_replace('#- E-Hentai Galleries#i', '', $foldername);
+			$foldername = preg_replace('#- ExHentaiorg#i', '', $foldername);
+			$foldername = preg_replace('#Hentairulesnet#i', '', $foldername);
 			if (!file_exists($foldername)) {
 				$oldmask = umask(0);
 				mkdir($foldername, 0777, true);

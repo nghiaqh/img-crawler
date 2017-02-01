@@ -28,5 +28,3 @@ function bulk_rename($folderPath) {
 		}
 	}
 }
-
-bulk_rename('/home/nathan/D/Reinbach, Switch (Ongoing) - E-Hentai Galleries');

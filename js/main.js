@@ -158,7 +158,8 @@ $(document).ready(function() {
 		$('#form textarea').text(pages.toString().replace(/,/g, ',\n'));
 	}
 
-	var host = 'ws://127.0.0.1:9001/';
+	var port = $('#form #port-number').val() ? $('#form #port-number').val() : '9001';
+	var host = 'ws://127.0.0.1:' + port + '/';
 	init(host);
 
 	$('#form').on('submit', function(event) {
@@ -168,6 +169,9 @@ $(document).ready(function() {
 
 	$('#reconnect-socket').click(function(event) {
 		event.preventDefault();
+		port = $('#form #port-number').val() ? $('#form #port-number').val() : '9001';
+		host = 'ws://127.0.0.1:' + port + '/';
+		init(host);
 		reconnect(host);
 	});
 });
