@@ -1,5 +1,7 @@
 <?php
-require_once dirname(__FILE__) . '/../crawler.php';
+// require_once dirname(__FILE__) . '/../crawler.php';
+require __DIR__ . '/../vendor/autoload.php';
+
 use Crawler\Crawler;
 
 class Crawler_Test extends PHPUnit_Framework_TestCase {
@@ -37,8 +39,8 @@ class Crawler_Test extends PHPUnit_Framework_TestCase {
         $loginUrl = 'https://forums.e-hentai.org/index.php?act=Login&CODE=01';
         $params = array(
             'CookieDate'=>1,
-            'UserName'=>'meaning', 
-            'PassWord'=>'iamtheone', 
+            'UserName'=>'meaning',
+            'PassWord'=>'iamtheone',
             'ipb_login_submit'=>'Login!'
             );
         $cookie = $this->crawler->getCookie($loginUrl, 'POST', $params);

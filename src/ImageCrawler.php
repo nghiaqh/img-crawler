@@ -1,6 +1,8 @@
 <?php
+namespace Crawler;
+
 set_time_limit(0);
-require("./include/url_to_absolute.php");
+require(__DIR__."/../include/url_to_absolute.php");
 
 class ImageCrawler {
 
@@ -190,7 +192,7 @@ class ImageCrawler {
 	}
 
 	private function isValidImageLink($url) {
-		if (strstr($url, "newreply.php")) {
+		if (strstr($url, "newreply.php") || strstr($url, "forums.e-hentai.org/index.php?showuser=")) {
 			return false;
 		}
 
