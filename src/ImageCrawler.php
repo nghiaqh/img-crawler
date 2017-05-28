@@ -31,7 +31,7 @@ class ImageCrawler {
 			CURLOPT_HEADER => 0
 			);
 
-		$dom = new DOMDocument;
+		$dom = new \DOMDocument;
 
 		$html = $this->getURLContent($curlOptions);
 		libxml_use_internal_errors(true); //ignore HTML5 tags error
@@ -46,6 +46,7 @@ class ImageCrawler {
 
 		if ($containerId) {
 			$html = $dom->getElementById($containerId);
+
 			if ($html) {
 				libxml_use_internal_errors(true);
 				$dom->loadHTML($html->C14N());
@@ -81,7 +82,7 @@ class ImageCrawler {
 			CURLOPT_USERAGENT => $user_agent,
 			CURLOPT_COOKIE => $cookie
 			);
-		$dom = new DOMDocument;
+		$dom = new \DOMDocument;
 
 		$html = $this->getURLContent($curlOptions);
 

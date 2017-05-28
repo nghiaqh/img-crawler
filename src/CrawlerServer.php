@@ -1,4 +1,6 @@
 <?php
+namespace Crawler;
+
 use Crawler\ImageCrawler;
 
 require_once(__DIR__ . "/../include/php-websockets/websockets.php");
@@ -11,7 +13,7 @@ require_once(__DIR__ . "/../include/php-websockets/websockets.php");
  *	$server->stdout($e->getMessage());
  * }
  */
-class CrawlerServer extends WebsocketServer {
+class CrawlerServer extends \WebsocketServer {
   private $crawler;
 
   public function __construct($addr, $port = 9001, $bufferLength = 2048) {
@@ -54,7 +56,7 @@ class CrawlerServer extends WebsocketServer {
           $thumbnailContainerId = 'thumbnails';
           $imageContainerId = 'theImage';
           $this->preprocess = 'getOriginSizeImageUrl';
-        } else if (strpos($page, 'g.e-hentai.org') !== false || strpos($message, 'exhentai.org') !== false) {
+        } else if (strpos($page, 'e-hentai.org') !== false || strpos($message, 'exhentai.org') !== false) {
           $thumbnailContainerId = 'gdt';
           $imageContainerId = 'img';
           $this->cookie = $this->cookie . '; nw=1; uconfig=dm_t;';
