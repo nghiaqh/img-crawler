@@ -1,8 +1,6 @@
 <?php
 namespace Crawler;
 
-use Crawler\Settings;
-
 set_time_limit(0);
 require(__DIR__."/../include/url_to_absolute.php");
 
@@ -124,7 +122,7 @@ class ImageCrawler {
 		return $links;
 	}
 
-	public function downloadImage($url, $destination, $name_prefix = null, $cookie = null, $progress = null) {
+	public function downloadImage($url, $destination, $normaliseFunc = null, $name_prefix = null, $cookie = null, $progress = null) {
 		$pattern = '#[^\/]+\.(jpg|png)#i';
 		$header = array(
 			'Accept: image/webp,*/*;q=0.8',
@@ -135,7 +133,10 @@ class ImageCrawler {
 		'Mozilla/5.0 (Windows NT 6.3; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/35.0.1916.153 Safari/537.36';
 		if (preg_match($pattern, $url, $matches)) {
 			$foldername = $destination.preg_replace('#[:;\.<>\|\?\\\[]#i', '', $name_prefix);
-			$foldername = Settings::normaliseFolderName($foldername);
+      if ($normaliseFunc !== null) {
+        $foldername = call_user_func($normaliseFunc, $foldername);
+      }
+
 			if (!file_exists($foldername)) {
 				$oldmask = umask(0);
 				mkdir($foldername, 0777, true);

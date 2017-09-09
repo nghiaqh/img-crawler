@@ -53,6 +53,8 @@ class CrawlerServer extends \WebsocketServer {
         $imageContainerId = $params[1];
         $this->preprocess = $params[2];
         $this->cookie = $params[3];
+        $this->destination = $params[4];
+        $this->normaliseFunc = $params[5];
 
         $this->stdout('Crawling ' . $page); // Terminal log
 
@@ -102,7 +104,7 @@ class CrawlerServer extends \WebsocketServer {
         'progress' => 0
       ));
       $this->send($user, $reply);
-      $this->crawler->downloadImage($image, $title, $this->cookie, array($this, 'progress'));
+      $this->crawler->downloadImage($image, $this->destination, $this->normaliseFunc, $title, $this->cookie, array($this, 'progress'));
     }
   }
 

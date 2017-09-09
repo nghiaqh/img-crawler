@@ -3,7 +3,7 @@ namespace Crawler;
 
 class Settings {
 
-  public $destination = "/media/nathan/D/";
+  public static $destination = "/media/nathan/D/";
 
   public static function normaliseFolderName($foldername) {
     $foldername = preg_replace('#\]#', ',', $foldername);
@@ -53,7 +53,7 @@ class Settings {
   }
 
   // Get url of full size image of hentairules.net
-  private static function getOriginSizeImageUrl($url) {
+  public static function getOriginSizeImageUrl($url) {
     $url = str_replace('/_data/i/', '/', $url);
     $url = str_replace('-xx.', '.', $url);
     return $url;
@@ -68,7 +68,7 @@ class Settings {
     if (strpos($page, 'hentairules.net') !== false) {
       $thumbnailContainerId = 'thumbnails';
       $imageContainerId = 'theImage';
-      $preprocess = array(self, 'getOriginSizeImageUrl');
+      $preprocess = 'Crawler\Settings::getOriginSizeImageUrl';
     } else if (strpos($page, 'e-hentai.org') !== false || strpos($message, 'exhentai.org') !== false) {
       $thumbnailContainerId = 'gdt';
       $imageContainerId = 'img';
@@ -84,6 +84,6 @@ class Settings {
       $this->cookie = self::getCookie($url, $params) . '; nw=1; uconfig=dm_t;';
     }
 
-    return [$thumbnailContainerId, $imageContainerId, $preprocess, $cookie];
+    return [$thumbnailContainerId, $imageContainerId, $preprocess, $cookie, self::$destination, 'Crawler\Settings::normaliseFolderName'];
   }
 }
