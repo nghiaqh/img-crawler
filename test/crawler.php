@@ -36,15 +36,15 @@ class Crawler_Test extends PHPUnit_Framework_TestCase {
     }
 
     public function testGetCookieByHttpPost() {
-        $loginUrl = 'https://forums.e-hentai.org/index.php?act=Login&CODE=01';
+        $loginUrl = 'https://someforum.org/login';
         $params = array(
             'CookieDate'=>1,
-            'UserName'=>'meaning',
-            'PassWord'=>'iamtheone',
+            'UserName'=>'username',
+            'PassWord'=>'password',
             'ipb_login_submit'=>'Login!'
             );
         $cookie = $this->crawler->getCookie($loginUrl, 'POST', $params);
-        $response = $this->crawler->sendHttpGet('http://exhentai.org', array(CURLOPT_COOKIE => $cookie));
+        $response = $this->crawler->sendHttpGet('https://someforum.org', array(CURLOPT_COOKIE => $cookie));
     }
 
 }

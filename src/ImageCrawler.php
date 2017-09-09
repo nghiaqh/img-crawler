@@ -1,6 +1,8 @@
 <?php
 namespace Crawler;
 
+use Crawler\Settings;
+
 set_time_limit(0);
 require(__DIR__."/../include/url_to_absolute.php");
 
@@ -122,7 +124,7 @@ class ImageCrawler {
 		return $links;
 	}
 
-	public function downloadImage($url, $name_prefix = null, $cookie = null, $progress = null) {
+	public function downloadImage($url, $destination, $name_prefix = null, $cookie = null, $progress = null) {
 		$pattern = '#[^\/]+\.(jpg|png)#i';
 		$header = array(
 			'Accept: image/webp,*/*;q=0.8',
@@ -132,11 +134,8 @@ class ImageCrawler {
 		$user_agent =
 		'Mozilla/5.0 (Windows NT 6.3; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/35.0.1916.153 Safari/537.36';
 		if (preg_match($pattern, $url, $matches)) {
-			$foldername = "/media/nathan/D/".preg_replace('#[:;\.<>\|\?\\\[]#i', '', $name_prefix);
-			$foldername = preg_replace('#\]#', ',', $foldername);
-			$foldername = preg_replace('#- E-Hentai Galleries#i', '', $foldername);
-			$foldername = preg_replace('#- ExHentaiorg#i', '', $foldername);
-			$foldername = preg_replace('#Hentairulesnet#i', '', $foldername);
+			$foldername = $destination.preg_replace('#[:;\.<>\|\?\\\[]#i', '', $name_prefix);
+			$foldername = Settings::normaliseFolderName($foldername);
 			if (!file_exists($foldername)) {
 				$oldmask = umask(0);
 				mkdir($foldername, 0777, true);
@@ -278,99 +277,4 @@ class ImageCrawler {
 
 		return $result;
 	}
-}
-
-/*
-Example of how to use ImageCrawler
-*/
-function downloadImages($pages, $thumbnailContainerId = null, $imageContainerId = null, $cookie = null, $sizelimit = 30720, $preprocess = null) {
-	if (empty($pages)) {
-		return 0;
-	}
-
-	$crawler = new ImageCrawler;
-	foreach ($pages as $page) {
-		$array = $crawler->scanForImageLinks($page, $thumbnailContainerId, $cookie);
-		$urls = $array[1];
-		$title = substr($array[2], 0, 300); //cut part of title longer than 300 characters
-		foreach ($urls as $i=>$u) {
-			if (substr($u, -4) === '.jpg' || substr($u, -4) === '.png') {
-				downloadImage($preprocess, $u, $crawler, $sizelimit, $title);
-			} else {
-				foreach ($crawler->scanForImages($u, $imageContainerId, $cookie) as $image) {
-					downloadImage($preprocess, $image, $crawler, $sizelimit, $title);
-				}
-			}
-		}
-	}
-
-	return 1;
-}
-
-function downloadImage($preprocess, $image, $crawler, $sizelimit, $title) {
-	if ($preprocess) {
-		$image = call_user_func($preprocess, $image);
-	}
-
-	// download images have size > size limit
-	if ($crawler->curlGetFileSize($image) > $sizelimit) {
-		$crawler->downloadImage($image, $title);
-	}
-}
-
-// Send POST request
-function httpPost($url, $params) {
-	$postData = '';
-	//create name value pairs seperated by &
-	foreach($params as $k => $v) {
-		$postData .= $k . '='.$v.'&';
-	}
-
-	rtrim($postData, '&');
-
-	$user_agent =
-		'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.71 Safari/537.36';
-
-	$ch = curl_init();
-
-	curl_setopt($ch,CURLOPT_URL,$url);
-	curl_setopt($ch,CURLOPT_RETURNTRANSFER,true);
-	curl_setopt($ch,CURLOPT_HEADER, 1);
-	curl_setopt($ch,CURLOPT_USERAGENT, $user_agent);
-	curl_setopt($ch, CURLOPT_POST, count($postData));
-	curl_setopt($ch, CURLOPT_POSTFIELDS, $postData);
-
-	$output=curl_exec($ch);
-
-	curl_close($ch);
-	return $output;
-}
-
-// Get url of full size image of hentairules.net
-function getOriginSizeImageUrl($url) {
-	$url = str_replace('/_data/i/', '/', $url);
-	$url = str_replace('-xx.', '.', $url);
-	return $url;
-}
-
-// Get cookie for g.e-hentai.org
-function getCookie() {
-	$params = array(
-	"UserName" => "meaning",
-	"PassWord" => "iamtheone",
-	"bt" => '',
-	"b" => "d",
-	"CookieDate" => 1,
-	"ipb_login_submit" => "Login!"
-	);
-
-	$result = httpPost("https://forums.e-hentai.org/index.php?act=Login&CODE=01",$params);
-	// get cookie from e-hentai.org
-	preg_match_all('/^Set-Cookie:\s*([^;]*)/mi', $result, $m);
-	$cookie = '';
-	foreach($m[1] as $value) {
-		$cookie .= $value . ';';
-	}
-	echo $cookie . "\r\n";
-	return $cookie;
 }

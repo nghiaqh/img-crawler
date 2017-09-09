@@ -160,7 +160,7 @@ $(document).ready(function() {
 
 	var port = $('#form #port-number').val() ? $('#form #port-number').val() : '9001';
 	var host = 'ws://127.0.0.1:' + port + '/';
-	init(host);
+	// init(host);
 
 	$('#form').on('submit', function(event) {
 		event.preventDefault();

@@ -2,6 +2,7 @@
 namespace Crawler;
 
 use Crawler\ImageCrawler;
+use Crawler\Settings;
 
 require_once(__DIR__ . "/../include/php-websockets/websockets.php");
 
@@ -17,10 +18,8 @@ class CrawlerServer extends \WebsocketServer {
   private $crawler;
 
   public function __construct($addr, $port = 9001, $bufferLength = 2048) {
-    // generate cookie for some site
-    $this->cookie = $this->getCookie();
     $this->crawler = new ImageCrawler;
-    $this->sizelimit = 100000;
+    $this->sizelimit = 10000;
     $this->preprocess = null;
 
     // call WebsocketServer constructor
@@ -47,23 +46,13 @@ class CrawlerServer extends \WebsocketServer {
 
       foreach ($pages as $pid=>$page) {
         $page = trim($page);
-        $thumbnailContainerId = null;
-        $imageContainerId = null;
-        $this->preprocess = null;
 
         // Generate parameters for crawler
-        if (strpos($page, 'hentairules.net') !== false) {
-          $thumbnailContainerId = 'thumbnails';
-          $imageContainerId = 'theImage';
-          $this->preprocess = 'getOriginSizeImageUrl';
-        } else if (strpos($page, 'e-hentai.org') !== false || strpos($message, 'exhentai.org') !== false) {
-          $thumbnailContainerId = 'gdt';
-          $imageContainerId = 'img';
-          $this->cookie = $this->cookie . '; nw=1; uconfig=dm_t;';
-        } else if (strpos($page, 'nhentai.net') !== false) {
-          $thumbnailContainerId = 'thumbnail-container';
-          $imageContainerId = 'image-container';
-        }
+        $params = Settings::defineCrawlerParameters($page, $message);
+        $thumbnailContainerId = $params[0];
+        $imageContainerId = $params[1];
+        $this->preprocess = $params[2];
+        $this->cookie = $params[3];
 
         $this->stdout('Crawling ' . $page); // Terminal log
 
@@ -135,54 +124,5 @@ class CrawlerServer extends \WebsocketServer {
       ));
       $this->send($this->user, $reply);
     }
-  }
-
-  protected function getCookie() {
-    $params = array(
-    "UserName" => "meaning",
-    "PassWord" => "iamtheone",
-    "bt" => '',
-    "b" => "d",
-    "CookieDate" => 1,
-    "ipb_login_submit" => "Login!"
-    );
-
-    $result = $this->httpPost("https://forums.e-hentai.org/index.php?act=Login&CODE=01",$params);
-    // get cookie from e-hentai.org
-    preg_match_all('/^Set-Cookie:\s*([^;]*)/mi', $result, $m);
-    $cookie = '';
-    foreach($m[1] as $value) {
-      $cookie .= $value . ';';
-    }
-    echo $cookie . "\r\n";
-    return $cookie;
-  }
-
-  // Send POST request
-  protected function httpPost($url, $params) {
-    $postData = '';
-    //create name value pairs seperated by &
-    foreach($params as $k => $v) {
-      $postData .= $k . '='.$v.'&';
-    }
-
-    rtrim($postData, '&');
-
-    $user_agent =
-      'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.71 Safari/537.36';
-
-    $ch = curl_init();
-
-    curl_setopt($ch,CURLOPT_URL,$url);
-    curl_setopt($ch,CURLOPT_RETURNTRANSFER,true);
-    curl_setopt($ch,CURLOPT_HEADER, 1);
-    curl_setopt($ch,CURLOPT_USERAGENT, $user_agent);
-    curl_setopt($ch, CURLOPT_POST, count($postData));
-    curl_setopt($ch, CURLOPT_POSTFIELDS, $postData);
-
-    $output=curl_exec($ch);
-
-    curl_close($ch);
-    return $output;
   }
 }
