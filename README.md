@@ -11,4 +11,9 @@ Server: PHP websockets https://github.com/ghedipunk/PHP-WebSockets
 php -q bin/socket.php
 ```
 
-Client:
+Example usage:
+
+http://localhost:80
+Press connect socket button
+Paste 'https://en.wikipedia.org/wiki/World' to textarea
+Press Run
