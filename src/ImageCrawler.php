@@ -122,7 +122,7 @@ class ImageCrawler {
 		return $links;
 	}
 
-	public function downloadImage($url, $destination, $normaliseFunc = null, $name_prefix = null, $cookie = null, $progress = null) {
+	public function downloadImage($url, $destination, $timeout = 300, $normaliseFunc = null, $name_prefix = null, $cookie = null, $progress = null) {
 		$pattern = '#[^\/]+\.(jpg|png)#i';
 		$header = array(
 			'Accept: image/webp,*/*;q=0.8',
@@ -153,7 +153,8 @@ class ImageCrawler {
 				CURLOPT_HTTPGET => true,
 				CURLOPT_USERAGENT => $user_agent,
 				CURLOPT_HTTPHEADER => $header,
-				CURLOPT_COOKIE => $cookie
+				CURLOPT_COOKIE => $cookie,
+        CURLOPT_TIMEOUT => $timeout
 				);
 
 			if ($progress) {
@@ -164,12 +165,19 @@ class ImageCrawler {
 			$ch = curl_init();
 			curl_setopt_array($ch, $curlOptions);
 			curl_exec($ch);
-			curl_close($ch);
-			fclose($fp);
-			chmod($foldername."/".$filename, 0766);
 
-			// echo "Successfully download ", $url, "<br>";
-			return 1;
+      if (curl_errno($ch)) {
+        curl_close($ch);
+  			fclose($fp);
+        return curl_error($ch);
+      } else {
+        curl_close($ch);
+  			fclose($fp);
+  			chmod($foldername."/".$filename, 0766);
+
+  			// echo "Successfully download ", $url, "<br>";
+  			return true;
+      }
 		}
 	}
 

@@ -90,6 +90,7 @@ function render(msg) {
 	// Grab the inline template
 	var tplOne = $('#template-crawling').html();
 	var tplTwo = $('#template-complete').html();
+	var rendered;
 
 	// Parse it (optional, only necessary if template is to be used again)
 	Mustache.parse(tplOne);
@@ -109,7 +110,7 @@ function render(msg) {
 				};
 			});
 
-			var rendered = Mustache.render(tplOne, currentPage);
+			rendered = Mustache.render(tplOne, currentPage);
 
 			// Overwrite the contents of #running with the rendered HTML
 			$('#running').html(rendered);
@@ -121,7 +122,7 @@ function render(msg) {
 			currentPage.images[data.id].status = data.status;
 			currentImgIndex = data.id;
 
-			var rendered = Mustache.render(tplOne, currentPage);
+			rendered = Mustache.render(tplOne, currentPage);
 			$('#running').html(rendered);
 		}
 
@@ -147,6 +148,16 @@ function render(msg) {
 		if (data.type === 'error') {
 			log('Error: ' + data.message);
 		}
+
+    if (data.type === 'curl error') {
+      parsedPages.pages.push({
+        url: data.url,
+        title: currentPage.title + ' / ' + data.url,
+        time: data.error,
+      });
+      rendered = Mustache.render(tplTwo, parsedPages);
+      $('#completed').html(rendered);
+    }
 	}
 }
 

@@ -45,7 +45,9 @@ class CrawlerServer extends \WebsocketServer {
       }
 
       foreach ($pages as $pid=>$page) {
-        $page = trim($page);
+        $tmp = explode('|', $page);
+        $page = trim($tmp[0]);
+        $from = sizeof($tmp) > 1 ? $tmp[1] : 0;
 
         // Generate parameters for crawler
         $params = Settings::defineCrawlerParameters($page, $message);
@@ -75,6 +77,11 @@ class CrawlerServer extends \WebsocketServer {
 
         // Scan image pages for actual image
         foreach ($urls as $i=>$u) {
+          if ($i < $from) {
+            $this->stdout($u . ' is skipped');
+            continue;
+          }
+
           if (substr($u, -4) === '.jpg' || substr($u, -4) === '.png') {
             $this->downloadImage($u, $title, $i, $user);
           } else {
@@ -104,7 +111,16 @@ class CrawlerServer extends \WebsocketServer {
         'progress' => 0
       ));
       $this->send($user, $reply);
-      $this->crawler->downloadImage($image, $this->destination, $this->normaliseFunc, $title, $this->cookie, array($this, 'progress'));
+      $result = $this->crawler->downloadImage($image, $this->destination, 300,  $this->normaliseFunc, $title, $this->cookie, array($this, 'progress'));
+
+      if ($result !== true) {
+        $reply = json_encode(array(
+          'type' => 'curl error',
+          'url' => $image,
+          'error' => $result
+        ));
+        $this->send($user, $reply);
+      }
     }
   }
 
