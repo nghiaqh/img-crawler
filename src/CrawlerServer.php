@@ -34,7 +34,7 @@ class CrawlerServer extends \WebsocketServer {
    */
   protected function process ($user, $message) {
     if ($message) {
-      $pages = explode(',', $message);
+      $pages = explode(';', $message);
       if (empty($pages)) {
         $reply = json_encode(array(
           'type' => 'error',
@@ -47,8 +47,7 @@ class CrawlerServer extends \WebsocketServer {
       foreach ($pages as $pid=>$page) {
         $tmp = explode('|', $page);
         $page = trim($tmp[0]);
-        $from = sizeof($tmp) > 1 ? $tmp[1] : 0;
-
+        $from = sizeof($tmp) > 2 ? $tmp[2] : 0;
         // Generate parameters for crawler
         $params = Settings::defineCrawlerParameters($page, $message);
         $thumbnailContainerId = $params[0];
@@ -62,7 +61,7 @@ class CrawlerServer extends \WebsocketServer {
 
         $array = $this->crawler->scanForImageLinks($page, $thumbnailContainerId, $this->cookie);
         $urls = $array[1];
-        $title = substr($array[2], 0, 164); //cut part of title longer than 300 characters
+        $title = sizeof($tmp) > 1 ? $tmp[1] : substr($array[2], 0, 256); //cut part of title longer than 256 characters
 
         // Send to client currently-being-processed page info.
         $reply = json_encode(array(
@@ -75,14 +74,19 @@ class CrawlerServer extends \WebsocketServer {
         ));
         $this->send($user, $reply);
 
+        if (strpos($from, '[') === 0) {
+          $from = explode(',', substr($from, 1, -1));
+        }
+        $isArray = is_array($from);
+
         // Scan image pages for actual image
         foreach ($urls as $i=>$u) {
-          if ($i < $from) {
-            $this->stdout($u . ' is skipped');
+          if (($isArray && !in_array($i+1, $from)) || (!$isArray && $i+1 < $from)) {
             continue;
           }
 
           if (substr($u, -4) === '.jpg' || substr($u, -4) === '.png') {
+            $this->stdout('Downloading ' . $u);
             $this->downloadImage($u, $title, $i, $user);
           } else {
             foreach ($this->crawler->scanForImages($u, $imageContainerId, $this->cookie) as $image) {
@@ -101,9 +105,12 @@ class CrawlerServer extends \WebsocketServer {
     if ($this->preprocess) {
       $image = call_user_func($this->preprocess, $image);
     }
+    echo 'Downloading ' . $image . PHP_EOL;
+
+    $imgSize = $this->crawler->curlGetFileSize($image, $this->cookie);
 
     // download images have size > size limit
-    if ($this->crawler->curlGetFileSize($image, $this->cookie) > $this->sizelimit) {
+    if ($imgSize === 'unknown' || $imgSize > $this->sizelimit) {
       $reply = json_encode(array(
         'type' => 'image',
         'id' => $i,
@@ -111,13 +118,21 @@ class CrawlerServer extends \WebsocketServer {
         'progress' => 0
       ));
       $this->send($user, $reply);
-      $result = $this->crawler->downloadImage($image, $this->destination, 300,  $this->normaliseFunc, $title, $this->cookie, array($this, 'progress'));
 
-      if ($result !== true) {
+      $result = $this->crawler->downloadImage($image, $this->destination, 300,  $this->normaliseFunc, $title, $this->cookie, array($this, 'progress'));
+      echo $result . PHP_EOL;
+
+      if (!$result) {
         $reply = json_encode(array(
           'type' => 'curl error',
           'url' => $image,
           'error' => $result
+        ));
+        $this->send($user, $reply);
+      } else {
+        $reply = json_encode(array(
+          'type' => 'image progress',
+          'progress' => 100
         ));
         $this->send($user, $reply);
       }
@@ -138,7 +153,7 @@ class CrawlerServer extends \WebsocketServer {
     if ($download_size > 0) {
       $reply = json_encode(array(
         'type' => 'image progress',
-        'progress' => $downloaded / $download_size  * 100
+        'progress' => $downloaded / $download_size * 100
       ));
       $this->send($this->user, $reply);
     }

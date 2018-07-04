@@ -11,21 +11,21 @@ class Settings {
     if (count($matches)) {
       $foldername = str_replace($matches[0], '', $foldername);
       $artist = trim(explode('by ', $matches[0])[1]);
-      echo 'artist: ' . $artist . PHP_EOL;
       $foldername = $artist . ', ' . $foldername;
     }
 
-    $foldername = preg_replace('#[":;\.<>\|\?\\\[\*]#i', '', $foldername);
-    $foldername = preg_replace('#\]#', ',', $foldername);
+    $foldername = preg_replace('#[":;\.<>\|\?\\\/*]\##i', '', $foldername);
+    $foldername = preg_replace('#[\|]#i', '-', $foldername);
+    $foldername = preg_replace('#[\[\]]#', ',', $foldername, 1);
     $foldername = preg_replace('#(,)+#', ',', $foldername);
     $foldername = str_replace([
       'Hentairulesnet Image Galleries',
       '- ExHentaiorg',
-      '- E-Hentai Galleries'
+      '- E-Hentai Galleries',
+      '» nhentai hentai doujinshi and manga'
     ], '', $foldername);
     $foldername = trim($foldername, " \t\n\r\0\x0B,.-");
 
-    echo $foldername. PHP_EOL;
     return $foldername;
   }
 
@@ -85,7 +85,8 @@ class Settings {
       $thumbnailContainerId = 'thumbnails';
       $imageContainerId = 'theImage';
       $preprocess = 'Crawler\Settings::getOriginSizeImageUrl';
-    } else if (strpos($page, 'e-hentai.org') !== false || strpos($message, 'exhentai.org') !== false) {
+    }
+    else if (strpos($page, 'e-hentai.org') !== false || strpos($message, 'exhentai.org') !== false) {
       $thumbnailContainerId = 'gdt';
       $imageContainerId = 'img';
       $url = "https://forums.e-hentai.org/index.php?act=Login&CODE=01";
@@ -104,7 +105,21 @@ class Settings {
         $cookie = 'nw=1; uconfig=dm_t;';
       }
     }
+    else if (strpos($page, 'nhentai.net') !== false) {
+      $thumbnailContainerId = 'thumbnail-container';
+      $imageContainerId = 'image-container';
+    }
+    else if (strpos($page, 'hentai2read.com') !== false) {
+      $thumbnailContainerId = 'thumbnails';
+      $imageContainerId = 'arf-reader';
+    }
 
     return [$thumbnailContainerId, $imageContainerId, $preprocess, $cookie, self::$destination, 'Crawler\Settings::normaliseFolderName'];
   }
 }
+
+// Example: https://hentai2read.com/thumbnails/M2438/C35059/2/|ShindoL, TSF MONOGATARI APPEND 2|[17];
+// url|folder name|array or a number
+// url is the only required portion
+// an array will specify pages to download & skip the rest
+// a number will set a starting page to download from & skip the prior ones

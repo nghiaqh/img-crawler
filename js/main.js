@@ -131,7 +131,7 @@ function render(msg) {
 			currentPage.images[currentImgIndex].progress = data.progress;
 			var selector = '#img-' + currentImgIndex + ' .progress-bar';
 			$(selector).attr('aria-valuenow', data.progress);
-			$(selector).css('width', data.progress);
+			$(selector).css('width', data.progress / 100 * 70);
 
 			if ((currentImgIndex + 1 === currentPage.images.length) && data.progress === 100) {
 				currentPage['time'] = Date();

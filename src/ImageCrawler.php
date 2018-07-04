@@ -97,7 +97,6 @@ class ImageCrawler {
         if (!in_array($link, $links)) {
           $links[] = $link;
         }
-
         return $links;
       }
 
@@ -276,8 +275,10 @@ class ImageCrawler {
         $status = (int)$matches[1];
       }
 
-      if ( preg_match("/Content-Length: (\d+)/", $data, $matches)) {
+      if ( preg_match("/Content-Length: (\d+)/", $data, $matches) ||
+        preg_match("/origSize=(\d+)/", $data, $matches)) {
         $content_length = (int)$matches[1];
+        echo $content_length . PHP_EOL;
       }
 
       // http://en.wikipedia.org/wiki/List_of_HTTP_status_codes
