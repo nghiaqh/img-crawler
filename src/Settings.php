@@ -3,7 +3,7 @@ namespace Crawler;
 
 class Settings {
 
-  public static $destination = "/mnt/d/H/";
+  public static $destination = "/mnt/c/Users/Nathan Quach/Hentai/";
 
   public static function normaliseFolderName($foldername) {
     preg_match('#, by ((?!\|).)*#', $foldername, $matches);
@@ -12,17 +12,21 @@ class Settings {
       $foldername = str_replace($matches[0], '', $foldername);
       $artist = trim(explode('by ', $matches[0])[1]);
       $foldername = $artist . ', ' . $foldername;
+    } else {
+      // $foldername = preg_replace('#[\[\]]#', ',', $foldername, 2);
     }
 
-    $foldername = preg_replace('#[":;\.<>\|\?\\\/*]\##i', '', $foldername);
+    $foldername = preg_replace('#[":;\.<>\|\?\\*]\##i', '', $foldername);
+    $foldername = preg_replace('#"#', '', $foldername);
+    // $foldername = preg_replace('#[\/]#', ' ', $foldername);
     $foldername = preg_replace('#[\|]#i', '-', $foldername);
-    $foldername = preg_replace('#[\[\]]#', ',', $foldername, 1);
     $foldername = preg_replace('#(,)+#', ',', $foldername);
     $foldername = str_replace([
-      'Hentairulesnet Image Galleries',
+      '- Hentairules.net Image Galleries',
       '- ExHentaiorg',
       '- E-Hentai Galleries',
-      '» nhentai hentai doujinshi and manga'
+      '» nhentai hentai doujinshi and manga',
+      '- ExHentai.org'
     ], '', $foldername);
     $foldername = trim($foldername, " \t\n\r\0\x0B,.-");
 
@@ -121,5 +125,6 @@ class Settings {
 // Example: https://hentai2read.com/thumbnails/M2438/C35059/2/|ShindoL, TSF MONOGATARI APPEND 2|[17];
 // url|folder name|array or a number
 // url is the only required portion
-// an array will specify pages to download & skip the rest
-// a number will set a starting page to download from & skip the prior ones
+// an array will specify pages to download & skip the rest e.g [11, 14, 15]
+// a number will set a starting page to download from & skip the prior ones e.g 11
+// range(1, 10) will tell apps to crawl image 1 to 10

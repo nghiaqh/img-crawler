@@ -77,11 +77,29 @@ class CrawlerServer extends \WebsocketServer {
         if (strpos($from, '[') === 0) {
           $from = explode(',', substr($from, 1, -1));
         }
-        $isArray = is_array($from);
+
+        // single number for starting from
+        // range for list picking
+        // array for cherry picking
+        $selectedUrls = [];
+
+        if (is_string($from)) {
+          preg_match('/^range\(([^,]+), ([^,]+)\)/', $from, $match);
+          print_r($match);
+          if (sizeof($match)) {
+            $selectedUrls = range($match[1], $match[2]);
+          } else {
+            $selectedUrls = range($from, sizeof($urls));
+          }
+        }
+
+        if (is_array($from)) {
+          $selectedUrls = $from;
+        }
 
         // Scan image pages for actual image
         foreach ($urls as $i=>$u) {
-          if (($isArray && !in_array($i+1, $from)) || (!$isArray && $i+1 < $from)) {
+          if ($from && !in_array($i+1, $selectedUrls)) {
             continue;
           }
 

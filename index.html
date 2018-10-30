@@ -55,7 +55,7 @@
 
     <div class="container bg-success app-container">
       <h3>Tasks completed</h3>
-      <div id="completed" class="info-block"></div>
+      <ol id="completed" class="info-block"></ol>
     </div>
 
     <!-- Footer -->
@@ -89,9 +89,9 @@
 
     <script id="template-complete" type="x-tmpl-mustache">
       {{#pages}}
-        <p class="page-item">
+        <li class="page-item">
           <a href="{{url}}" target="_blank">{{title}}</a> - <span class="timestamp">{{time}}</span>
-        </p>
+        </li>
       {{/pages}}
     </script>
 
