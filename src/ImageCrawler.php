@@ -6,7 +6,8 @@ require(__DIR__."/../include/url_to_absolute.php");
 
 class ImageCrawler {
 
-  public function scanForImageLinks($url, $containerId = null, $cookie = null) {
+  public function scanForImageLinks($url, $containerId = null, $cookie = null,
+    $excludeLinksFunc = null) {
     $links = array();
     $nodes = array();
     $user_agent =
@@ -58,7 +59,12 @@ class ImageCrawler {
     foreach ($dom->getElementsByTagName('a') as $node) {
       if ($node->getElementsByTagName('img')->length > 0) {
         $link = url_to_absolute($url, $node->getAttribute("href"));
-        if (!in_array($link, $links) && $this->isValidImageLink($link)) {
+
+        $isValid = $excludeLinksFunc !== null
+          ? call_user_func($excludeLinksFunc, $link)
+          : 200;
+
+        if (!in_array($link, $links) && $isValid) {
           $links[] = $link;
           $node->setAttribute("href", $link);
           $nodes[] = $node->C14N();
@@ -121,7 +127,13 @@ class ImageCrawler {
     return $links;
   }
 
-  public function downloadImage($url, $destination, $timeout = 300, $normaliseFunc = null, $name_prefix = null, $cookie = null, $progress = null) {
+  public function downloadImage(
+    $url,
+    $foldername,
+    $timeout = 300,
+    $cookie = null,
+    $progress = null
+  ) {
     $pattern = '#[^\/]+\.(jpg|png)#i';
     $header = array(
       'Accept: image/webp,*/*;q=0.8',
@@ -131,20 +143,13 @@ class ImageCrawler {
     $user_agent =
     'Mozilla/5.0 (Windows NT 6.3; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/35.0.1916.153 Safari/537.36';
 
-    if (preg_match($pattern, $url, $matches)) {
-      if ($normaliseFunc !== null) {
-        $name_prefix = call_user_func($normaliseFunc, $name_prefix);
-      }
-
-      $foldername = $destination . $name_prefix;
-
+    if (preg_match_all($pattern, $url, $matches, PREG_SET_ORDER)) {
       if (!file_exists($foldername)) {
         $oldmask = umask(0);
         mkdir($foldername, 0777, true);
         umask($oldmask);
       }
-
-      $filename = $this->cleanName(substr($name_prefix, 0, 10) . "_" . $matches[0]);
+      $filename = $this->cleanName(end($matches)[0]);
       $fp = fopen($foldername."/".$filename, "w");
 
       $curlOptions = array(
@@ -199,14 +204,6 @@ class ImageCrawler {
     }
 
     return null;
-  }
-
-  private function isValidImageLink($url) {
-    if (strstr($url, "newreply.php") || strstr($url, "forums.e-hentai.org/index.php?showuser=")) {
-      return false;
-    }
-
-    return true;
   }
 
   private function cleanName($string) {

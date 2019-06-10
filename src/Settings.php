@@ -18,7 +18,6 @@ class Settings {
     foreach($m[1] as $value) {
       $cookie .= $value . ';';
     }
-    echo $cookie . "\r\n";
     return $cookie;
   }
 
@@ -57,13 +56,38 @@ class Settings {
     return $url;
   }
 
+  // Excluding unwanted image links
+  public static function isValidImageLink($url) {
+    if (
+      strstr($url, "newreply.php")
+      || strstr($url, "index.php?showuser=")
+      || strstr($url, "ads-iframe-display.php")
+      || strstr($url, "img162.imagetwist.com/th/")
+      || strstr($url, "imagetwist.com/imgs")
+      || strstr($url, "sstatic1.histats.com")
+    ) {
+      return false;
+    }
+
+    return true;
+  }
+
   public static function defineCrawlerParameters($page, $message) {
     $thumbnailContainerId = null;
     $imageContainerId = null;
     $preprocess = null;
     $cookie = '';
+    $excludeLinksFunc = 'Crawler\Settings::isValidImageLink';
 
-    return [$thumbnailContainerId, $imageContainerId, $preprocess, $cookie, self::$destination, 'Crawler\Settings::normaliseFolderName'];
+    return [
+      $thumbnailContainerId,
+      $imageContainerId,
+      $preprocess,
+      $cookie,
+      self::$destination,
+      'Crawler\Settings::normaliseFolderName',
+      $excludeLinksFunc
+    ];
   }
 }
 
