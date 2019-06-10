@@ -56,10 +56,16 @@ class CrawlerServer extends \WebsocketServer {
         $this->cookie = $params[3];
         $this->destination = $params[4];
         $this->normaliseFunc = $params[5];
+        $this->excludeLinksFunc = $params[6];
 
         $this->stdout('Crawling ' . $page); // Terminal log
 
-        $array = $this->crawler->scanForImageLinks($page, $thumbnailContainerId, $this->cookie);
+        $array = $this->crawler->scanForImageLinks(
+          $page,
+          $thumbnailContainerId,
+          $this->cookie,
+          $this->excludeLinksFunc
+        );
         $urls = $array[1];
         $title = sizeof($tmp) > 1 ? $tmp[1] : substr($array[2], 0, 256); //cut part of title longer than 256 characters
 
@@ -96,10 +102,13 @@ class CrawlerServer extends \WebsocketServer {
         if (is_array($from)) {
           $selectedUrls = $from;
         }
-
         // Scan image pages for actual image
         foreach ($urls as $i=>$u) {
-          if ($from && !in_array($i+1, $selectedUrls)) {
+          $isValid = $this->excludeLinksFunc !== null
+            ? call_user_func($this->excludeLinksFunc, $u)
+            : 200;
+
+          if ($from && !in_array($i+1, $selectedUrls) || !$isValid) {
             continue;
           }
 
@@ -108,7 +117,10 @@ class CrawlerServer extends \WebsocketServer {
             $this->downloadImage($u, $title, $i, $user);
           } else {
             foreach ($this->crawler->scanForImages($u, $imageContainerId, $this->cookie) as $image) {
-              $this->downloadImage($image, $title, $i, $user);
+              $isValid = $this->excludeLinksFunc !== null
+              ? call_user_func($this->excludeLinksFunc, $image)
+              : 200;
+              if ($isValid) $this->downloadImage($image, $title, $i, $user);
             }
           }
         }
@@ -137,7 +149,16 @@ class CrawlerServer extends \WebsocketServer {
       ));
       $this->send($user, $reply);
 
-      $result = $this->crawler->downloadImage($image, $this->destination, 300,  $this->normaliseFunc, $title, $this->cookie, array($this, 'progress'));
+      $name_prefix = $this->normaliseFunc !== null
+        ? call_user_func($this->normaliseFunc, $title)
+        : $title;
+
+      $result = $this->crawler->downloadImage(
+        $image,
+        $this->destination . $name_prefix,
+        300,
+        $this->cookie,
+        array($this, 'progress'));
       echo $result . PHP_EOL;
 
       if (!$result) {
